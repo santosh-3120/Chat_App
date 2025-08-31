@@ -1,0 +1,24 @@
+import { Avatar, Box, Text } from '@chakra-ui/react';
+import './userListItem.css';
+
+interface UserListItemProps {
+  user: any;
+  handleFunction: () => void;
+}
+
+const UserListItem: React.FC<UserListItemProps> = ({ user, handleFunction }) => {
+  return (
+    <Box className="user-list-item" onClick={handleFunction}>
+      <Avatar className="user-list-avatar" size="sm" name={user.name} src={user.pic} />
+      <Box>
+        <Text>{user.name}</Text>
+        <Text className="user-list-email">
+          <b>Email : </b>
+          {user.email}
+        </Text>
+      </Box>
+    </Box>
+  );
+};
+
+export default UserListItem;
