@@ -51,7 +51,7 @@ export const isSameSenderMargin = (messages: any[], m: any, i: number, userId: s
     return 'auto';
   }
 };
-
+//
 
 export const isSameUser = (messages: any[], m: any, i: number) => {
   if (!messages || !m || !m.sender) return false;
