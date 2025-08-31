@@ -9,17 +9,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # Use a stable Node.js version
+      - name: Install Vercel CLI
+        run: npm install -g vercel@46.1.1
       - name: Deploy to Vercel
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
         run: |
-          npm install -g vercel
           cd client
           vercel pull --yes --environment=production --token=$VERCEL_TOKEN
           vercel build --prod --token=$VERCEL_TOKEN
           vercel deploy --prebuilt --prod --token=$VERCEL_TOKEN
+        shell: bash # Explicitly specify bash shell
 
   deploy-backend:
     runs-on: ubuntu-latest
@@ -35,3 +41,4 @@ jobs:
             -H "Content-Type: application/json" \
             -d '{"serviceId": "'$RENDER_SERVICE_ID'"}' \
             https://api.render.com/v1/services/$RENDER_SERVICE_ID/deploys
+        shell: bash
