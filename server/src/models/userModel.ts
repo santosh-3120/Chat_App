@@ -7,6 +7,8 @@ export interface IUser {
   email: string;
   password: string;
   pic: string;
+  socketId?: string; // Added for Socket.IO
+  lastSeen?: Date; // Added for presence
   matchPassword?: (enteredPassword: string) => Promise<boolean>;
 }
 
@@ -19,6 +21,8 @@ const userSchema = new mongoose.Schema<IUser>(
       type: String,
       default: 'https://icon-library.com/images/anonymous-avatar-icon/anonymous-avatar-icon-25.jpg',
     },
+    socketId: { type: String, default: null }, // Store Socket.IO ID
+    lastSeen: { type: Date, default: null }, // Last online timestamp
   },
   { timestamps: true }
 );

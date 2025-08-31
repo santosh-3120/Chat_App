@@ -9,6 +9,8 @@ import userRoutes from './routes/userRoutes';
 import chatRoutes from './routes/chatRoutes';
 import messageRoutes from './routes/messageRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
+import User from './models/userModel';
+
 
 dotenv.config();
 connectDB();
@@ -71,6 +73,16 @@ const io = new Server(server, {
 io.on('connection', (socket) => {
   console.log('New socket connected:', socket.id);
 
+  socket.on('setup', async (user: any) => {
+    if (user?._id) {
+      await User.findByIdAndUpdate(user._id, {
+        socketId: socket.id,
+        lastSeen: new Date(),
+      });
+      socket.emit('connected');
+    }
+  });
+
   socket.on('join chat', (room) => {
     socket.join(room);
     console.log(`Socket ${socket.id} joined room ${room}`);
@@ -82,15 +94,18 @@ io.on('connection', (socket) => {
   socket.on('new message', (message) => {
     const chat = message.chat;
     if (!chat.users) return console.log('Chat.users not defined');
-
     chat.users.forEach((user: any) => {
       if (user._id === message.sender._id) return;
       socket.to(user._id).emit('message received', message);
     });
   });
 
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('Socket disconnected:', socket.id);
+    await User.findOneAndUpdate(
+      { socketId: socket.id },
+      { socketId: null, lastSeen: new Date() }
+    );
   });
 });
 
