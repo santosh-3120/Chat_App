@@ -7,6 +7,7 @@ import Chat from '../models/chatModel';
 import mongoose from 'mongoose';
 
 const sendMessage = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const start = Date.now(); // latency start
   console.log("sendMessage called", req.body, req.user?._id); // log immediately
 
   const { content, chatId } = req.body;
@@ -37,10 +38,12 @@ const sendMessage = asyncHandler(async (req: AuthRequest, res: Response) => {
   await Chat.findByIdAndUpdate(chatId, { latestMessage: message._id });
 
   console.log("Message sent:", message._id); // debug
+  console.log("sendMessage latency:", Date.now() - start, "ms"); // latency log
   res.json(message);
 });
 
 const allMessages = asyncHandler(async (req: AuthRequest, res: Response) => {
+  const start = Date.now(); // latency start
   console.log("allMessages called", req.params, req.user?._id);
 
   const { chatId } = req.params;
@@ -68,6 +71,7 @@ const allMessages = asyncHandler(async (req: AuthRequest, res: Response) => {
     .slice(0, 50);
 
   console.log("Messages sorted and limited:", messagesSorted.length);
+  console.log("allMessages latency:", Date.now() - start, "ms"); // latency log
   res.json(messagesSorted);
 });
 

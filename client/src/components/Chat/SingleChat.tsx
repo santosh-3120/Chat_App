@@ -120,17 +120,19 @@ const SingleChat: React.FC<{ fetchAgain: boolean; setFetchAgain: (val: boolean) 
   }, [selectedChat]);
 
   useEffect(() => {
-    socket.on('message received', (newMessage: any) => {
-      if (!selectedChatCompare || selectedChatCompare._id !== newMessage.chat._id) {
-        if (!notification.includes(newMessage)) {
-          setNotification([newMessage, ...notification]);
-          setFetchAgain(!fetchAgain);
-        }
-      } else {
-        setMessages([...messages, newMessage]);
+  socket.on('message received', (newMessage: any) => {
+    const start = Date.now();
+    if (!selectedChatCompare || selectedChatCompare._id !== newMessage.chat._id) {
+      if (!notification.includes(newMessage)) {
+        setNotification([newMessage, ...notification]);
+        setFetchAgain(!fetchAgain);
       }
-    });
+    } else {
+      setMessages([...messages, newMessage]);
+      console.log(`Message received latency: ${Date.now() - start}ms`);
+    }
   });
+});
 
   return (
     <>
