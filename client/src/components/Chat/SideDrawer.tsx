@@ -1,30 +1,68 @@
-import { 
-  BellIcon, 
-  ChevronDownIcon 
+import {
+  BellIcon,
+  ChevronDownIcon
 } from '@chakra-ui/icons';
-import { 
+import {
   Avatar, Box, Button, Drawer, DrawerBody, DrawerContent, DrawerHeader, DrawerOverlay,
-  Input, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Text, Tooltip, useDisclosure, useToast, Spinner 
+  Input, Menu, MenuButton, MenuDivider, MenuItem, MenuList, Text, Tooltip, useDisclosure, useToast, Spinner
 } from '@chakra-ui/react';
 import axios from 'axios';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileModal from '../miscellaneous/ProfileModal';
 import UserListItem from '../userAvatar/UserListItem';
 import { useChatState } from '../../context/ChatProvider';
 import { getSender } from '../../config/ChatLogics';
 import './chat.css';
+import { io, Socket } from 'socket.io-client';
 
 const SideDrawer: React.FC = () => {
   const [search, setSearch] = useState('');
   const [searchResult, setSearchResult] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingChat, setLoadingChat] = useState(false);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   const { user, selectedChat, setSelectedChat, notification, setNotification, chats, setChats } = useChatState();
   const toast = useToast();
   const { isOpen, onOpen, onClose } = useDisclosure();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Initialize Socket.IO client
+    const socketInstance = io('https://chat-app-ejxv.onrender.com', {
+      withCredentials: true,
+      extraHeaders: {
+        Authorization: `Bearer ${user?.token}`,
+      },
+    });
+
+    setSocket(socketInstance);
+
+    // Emit setup event with user data
+    if (user) {
+      socketInstance.emit('setup', user);
+    }
+
+    // Cleanup on unmount
+    return () => {
+      socketInstance.disconnect();
+      setSocket(null);
+    };
+  }, [user]);
+
+  useEffect(() => {
+    if (socket) {
+      socket.on('presence update', (users: any[]) => {
+        setSearchResult((prev) =>
+          prev.map((u) => {
+            const updatedUser = users.find((updated) => updated._id === u._id);
+            return updatedUser ? { ...u, isOnline: updatedUser.isOnline, lastSeen: updatedUser.lastSeen } : u;
+          })
+        );
+      });
+    }
+  }, [socket]);
 
   const logoutHandler = () => {
     localStorage.removeItem('userInfo');
@@ -47,7 +85,14 @@ const SideDrawer: React.FC = () => {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${user?.token}` } };
       const { data } = await axios.get(`/api/user?search=${search}`, config);
-      setSearchResult(Array.isArray(data) ? data : []);
+      const usersWithStatus = await Promise.all(
+        data.map(async (u: any) => ({
+          ...u,
+          isOnline: false, // Will be updated by presence
+          lastSeen: u.lastSeen || null,
+        }))
+      );
+      setSearchResult(usersWithStatus);
       setLoading(false);
     } catch (error: any) {
       toast({
@@ -67,7 +112,6 @@ const SideDrawer: React.FC = () => {
       setLoadingChat(true);
       const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` } };
       const { data } = await axios.post(`/api/chat`, { userId }, config);
-
       if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
       setSelectedChat(data);
       setLoadingChat(false);
