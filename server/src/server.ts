@@ -27,6 +27,7 @@ app.use(limiter);
 
 // CORS for REST APIs
 const allowedOrigins = [
+  'https://chat-app-ten-beige-30.vercel.app',
   'http://localhost:3000', // your frontend in dev
   'http://localhost:5173', // optional, if using Vite
 ];
