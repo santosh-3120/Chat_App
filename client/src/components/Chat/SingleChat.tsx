@@ -11,7 +11,7 @@ import ProfileModal from '../miscellaneous/ProfileModal';
 import ScrollableChat from './ScrollableChat';
 import './chat.css';
 
-const ENDPOINT = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+const ENDPOINT = import.meta.env.VITE_SOCKET_URL;
 let socket: any;
 let selectedChatCompare: any;
 
