@@ -72,7 +72,7 @@ const searchUsers = asyncHandler(async (req: AuthRequest, res: Response) => {
   }
 
   const users = await User.find({ ...keyword, _id: { $ne: req.user._id } })
-    .select('-password')
+    .select('name email pic socketId lastSeen') // Include socketId and lastSeen
     .lean();
 
   res.json(users);

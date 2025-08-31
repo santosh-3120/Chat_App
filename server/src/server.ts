@@ -9,33 +9,37 @@ import userRoutes from './routes/userRoutes';
 import chatRoutes from './routes/chatRoutes';
 import messageRoutes from './routes/messageRoutes';
 import { notFound, errorHandler } from './middleware/errorMiddleware';
+import { createClient } from 'redis';
 import User from './models/userModel';
-
 
 dotenv.config();
 connectDB();
 
 const app = express();
 
+// Redis setup
+const redisClient = createClient({
+  url: process.env.REDIS_URL,
+});
+redisClient.on('error', (err) => console.error('Redis error:', err));
+redisClient.connect();
+
 // Body parser
 app.use(express.json());
 
-// Rate limiter (optional, prevents abuse)
+// Rate limiter
 const limiter = rateLimit({
-  windowMs: 10 * 60 * 1000, // 10 minutes
+  windowMs: 10 * 60 * 1000,
   max: 100,
 });
 app.use(limiter);
 
-// CORS for REST APIs
+// CORS
 const allowedOrigins = [
   'https://chat-app-ten-beige-30.vercel.app',
-  'http://localhost:3000', // your frontend in dev
-  'http://localhost:5173', // optional, if using Vite
+  'http://localhost:3000',
+  'http://localhost:5173',
 ];
-
-if (process.env.FRONTEND_URL) allowedOrigins.push(process.env.FRONTEND_URL);
-
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -64,7 +68,7 @@ const server = http.createServer(app);
 // Socket.IO setup
 const io = new Server(server, {
   cors: {
-    origin: allowedOrigins, // use same origins as REST API
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -75,11 +79,21 @@ io.on('connection', (socket) => {
 
   socket.on('setup', async (user: any) => {
     if (user?._id) {
+      await redisClient.set(`user:${user._id}`, socket.id);
       await User.findByIdAndUpdate(user._id, {
         socketId: socket.id,
         lastSeen: new Date(),
       });
       socket.emit('connected');
+      // Broadcast presence
+      const users = await User.find({ _id: { $ne: user._id } }).select('name email socketId lastSeen').lean();
+      const onlineUsers = await Promise.all(
+        users.map(async (u) => ({
+          ...u,
+          isOnline: (await redisClient.get(`user:${u._id}`)) !== null,
+        }))
+      );
+      io.emit('presence update', onlineUsers);
     }
   });
 
@@ -102,10 +116,22 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', async () => {
     console.log('Socket disconnected:', socket.id);
-    await User.findOneAndUpdate(
+    const user = await User.findOneAndUpdate(
       { socketId: socket.id },
-      { socketId: null, lastSeen: new Date() }
-    );
+      { socketId: null, lastSeen: new Date() },
+      { new: true }
+    ).lean();
+    if (user) {
+      await redisClient.del(`user:${user._id}`);
+      const users = await User.find({ _id: { $ne: user._id } }).select('name email socketId lastSeen').lean();
+      const onlineUsers = await Promise.all(
+        users.map(async (u) => ({
+          ...u,
+          isOnline: (await redisClient.get(`user:${u._id}`)) !== null,
+        }))
+      );
+      io.emit('presence update', onlineUsers);
+    }
   });
 });
 
