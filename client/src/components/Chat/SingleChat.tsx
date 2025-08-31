@@ -38,7 +38,7 @@ const SingleChat: React.FC<{ fetchAgain: boolean; setFetchAgain: (val: boolean) 
     try {
       setLoading(true);
       const config = { headers: { Authorization: `Bearer ${user?.token}` } };
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/message/${selectedChat._id}`, config);
+      const { data } = await axios.get(`/api/message/${selectedChat._id}`, config);
       setMessages(data);
       setLoading(false);
 
@@ -64,7 +64,7 @@ const SingleChat: React.FC<{ fetchAgain: boolean; setFetchAgain: (val: boolean) 
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` },
         };
         const { data } = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/message`,
+          `/api/message`,
           { content: newMessage, chatId: selectedChat._id },
           config
         );

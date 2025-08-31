@@ -53,7 +53,7 @@ const Signup: React.FC = () => {
 
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/user/signup`, { name, email, password, pic }, config);
+      const { data } = await axios.post(`/api/user/signup`, { name, email, password, pic }, config);
       toast({
         title: 'Registration successful',
         status: 'success',

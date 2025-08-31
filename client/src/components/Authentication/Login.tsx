@@ -41,7 +41,7 @@ const Login: React.FC = () => {
 
     try {
       const config = { headers: { 'Content-Type': 'application/json' } };
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/user/login`, { email, password }, config);
+      const { data } = await axios.post(`/api/user/login`, { email, password }, config);
       toast({
         title: 'Login successful',
         status: 'success',

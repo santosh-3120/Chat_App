@@ -19,7 +19,7 @@ const MyChats: React.FC<{ fetchAgain: boolean }> = ({ fetchAgain }) => {
       const config = {
         headers: { Authorization: `Bearer ${user?.token}` },
       };
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/chat`, config);
+      const { data } = await axios.get(`/api/chat`, config);
       setChats(data);
     } catch (error: any) {
       toast({

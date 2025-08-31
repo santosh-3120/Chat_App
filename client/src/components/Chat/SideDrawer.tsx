@@ -45,11 +45,9 @@ const SideDrawer: React.FC = () => {
 
     try {
       setLoading(true);
-      const config = {
-        headers: { Authorization: `Bearer ${user?.token}` },
-      };
-      const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/api/user?search=${search}`, config);
-      setSearchResult(data);
+      const config = { headers: { Authorization: `Bearer ${user?.token}` } };
+      const { data } = await axios.get(`/api/user?search=${search}`, config);
+      setSearchResult(Array.isArray(data) ? data : []);
       setLoading(false);
     } catch (error: any) {
       toast({
@@ -67,13 +65,8 @@ const SideDrawer: React.FC = () => {
   const accessChat = async (userId: string) => {
     try {
       setLoadingChat(true);
-      const config = {
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${user?.token}`,
-        },
-      };
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/api/chat`, { userId }, config);
+      const config = { headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user?.token}` } };
+      const { data } = await axios.post(`/api/chat`, { userId }, config);
 
       if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
       setSelectedChat(data);
@@ -112,20 +105,21 @@ const SideDrawer: React.FC = () => {
               <BellIcon fontSize="2xl" m={1} />
             </MenuButton>
             <MenuList pl={2}>
-              {!notification.length && 'No New Messages'}
-              {notification.map((notif) => (
-                <MenuItem
-                  key={notif._id}
-                  onClick={() => {
-                    setSelectedChat(notif.chat);
-                    setNotification(notification.filter((n) => n !== notif));
-                  }}
-                >
-                  {notif.chat.isGroupChat
-                    ? `New Message in ${notif.chat.chatName}`
-                    : `New Message from ${getSender(user, notif.chat.users)}`}
-                </MenuItem>
-              ))}
+              {!Array.isArray(notification) || notification.length === 0
+                ? 'No New Messages'
+                : notification.map((notif) => (
+                    <MenuItem
+                      key={notif._id}
+                      onClick={() => {
+                        setSelectedChat(notif.chat);
+                        setNotification(notification.filter((n) => n !== notif));
+                      }}
+                    >
+                      {notif.chat.isGroupChat
+                        ? `New Message in ${notif.chat.chatName}`
+                        : `New Message from ${getSender(user, notif.chat.users)} `}
+                    </MenuItem>
+                  ))}
             </MenuList>
           </Menu>
           <Menu>
@@ -161,9 +155,13 @@ const SideDrawer: React.FC = () => {
             {loading ? (
               <Spinner size="xl" />
             ) : (
-              searchResult.map((u) => (
-                <UserListItem key={u._id} user={u} handleFunction={() => accessChat(u._id)} />
-              ))
+              Array.isArray(searchResult) && searchResult.length > 0 ? (
+                searchResult.map((u) => (
+                  <UserListItem key={u._id} user={u} handleFunction={() => accessChat(u._id)} />
+                ))
+              ) : (
+                <Text mt={4} color="gray.500">No users found</Text>
+              )
             )}
 
             {loadingChat && <Spinner mt={4} size="lg" />}
